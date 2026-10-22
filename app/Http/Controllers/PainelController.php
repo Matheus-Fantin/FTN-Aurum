@@ -7,6 +7,7 @@ use App\Models\MarketAsset;
 use App\Services\CarteiraService;
 use App\Services\Mercado\MercadoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class PainelController extends Controller
@@ -23,7 +24,7 @@ class PainelController extends Controller
             'resumo' => $carteira->resumo($ativos, $user->metas()),
             'temAtivos' => $ativos->isNotEmpty(),
             'evolucao' => $user->snapshots()->where('data', '>=', now()->subDays(90)->toDateString())->orderBy('data')->pluck('valor')->all(),
-            'atualizadoEm' => $ativos->max('cotacao_atualizada_em') ?? MarketAsset::max('atualizado_em'),
+            'atualizadoEm' => $this->ultimaAtualizacao($ativos->max('cotacao_atualizada_em') ?? MarketAsset::max('atualizado_em')),
             'rankings' => $mercado->rankings(4),
             'radar' => $mercado->radar(3),
             'indices' => $mercado->indices(),
@@ -34,5 +35,11 @@ class PainelController extends Controller
             'mercadoVazio' => ! MarketAsset::exists(),
             'semToken' => blank(config('cotacoes.brapi.token')),
         ]);
+    }
+
+    /** max() de uma coluna de data vem do banco como texto; o painel precisa de uma data. */
+    private function ultimaAtualizacao(mixed $valor): ?Carbon
+    {
+        return $valor ? Carbon::parse($valor) : null;
     }
 }
