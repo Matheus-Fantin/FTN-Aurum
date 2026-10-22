@@ -75,9 +75,12 @@ class MarketAsset extends Model
             return $query;
         }
 
+        // lower() nos dois lados: no Postgres o "like" diferencia maiúsculas de minúsculas.
+        $parecido = '%'.mb_strtolower($termo).'%';
+
         return $query->where(fn ($q) => $q->where('ticker', 'like', mb_strtoupper($termo).'%')
-            ->orWhere('nome', 'like', '%'.$termo.'%')
-            ->orWhere('setor', 'like', '%'.$termo.'%'));
+            ->orWhereRaw('lower(nome) like ?', [$parecido])
+            ->orWhereRaw('lower(setor) like ?', [$parecido]));
     }
 
     /** Fechamentos do histórico para gráficos: lista de números. */
